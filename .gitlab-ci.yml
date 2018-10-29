@@ -1,0 +1,72 @@
+image: docker:latest
+
+stages:
+  - ut
+  - build
+  - package
+  - it
+  - deploy
+
+#services:
+#  - docker:dind
+  
+before_script: 
+  - cat /etc/hosts
+  - pwd && ls -al
+  - tree || true
+  - ls -al build/libs/ || true
+  
+ut:
+  stage: ut
+  script:
+    - echo "currently no ut test"
+  
+gradle-build:
+  image: gradle:4.10.2-jdk8-alpine
+  stage: build
+  script: 
+    - gradle build
+  artifacts:
+    paths:
+      - build/libs/*.jar
+
+docker-build:
+  stage: package
+  script:
+    - docker build -t 192.168.193.200:5000/demo .
+#    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+    - docker push 192.168.193.200:5000/demo
+    - docker image rm 192.168.193.200:5000/demo:latest
+  
+it:
+  stage: it
+  script: 
+    - echo "currently no it test"
+  
+deploy_to_test:
+  stage: deploy
+  script: 
+    - docker stop testdemo || true
+    - docker stop testdb || true
+    - docker network create test || true
+    - docker run --rm -d --network test --name testdb  -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=demo mysql:5.7 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    - docker run --rm -d --network test --name testdemo --link testdb:mysqldb -p 9080:80 192.168.193.200:5000/demo:latest
+  environment:
+    name: test
+    url: http://192.168.193.201:9080/demo/all
+
+deploy_to_prod:
+  stage: deploy
+  script: 
+    - docker stop proddemo || true
+    - docker stop proddb || true
+    - docker network create prod || true
+    - docker run --rm -d --network prod --name proddb -e MYSQL_ROOT_PASSWORD=pass -e MYSQL_DATABASE=demo mysql:5.7 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    - docker run --rm -d --network prod --name proddemo --link proddb:mysqldb -p 8080:80 192.168.193.200:5000/demo:latest
+  environment:
+    name: prod
+    url: http://192.168.193.201:8080/demo/all
+  when: manual
+  only: 
+    - master
+  

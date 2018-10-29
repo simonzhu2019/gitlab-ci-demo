@@ -1,0 +1,44 @@
+version: '3.7'
+services:
+  web:
+    image: 'gitlab/gitlab-ce:11.4.0-ce.0'
+    restart: always
+    hostname: 'server.local'
+    extra_hosts:
+      - "smtp.server:192.168.193.200"
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://192.168.193.200'
+        gitlab_rails['smtp_enable'] = true;
+        gitlab_rails['smtp_address'] = 'smtp.server';
+        gitlab_rails['smtp_port'] = 25;
+        gitlab_rails['smtp_domain'] = 'server.local';
+        gitlab_rails['smtp_tls'] = false;
+        gitlab_rails['smtp_openssl_verify_mode'] = 'none'
+        gitlab_rails['smtp_enable_starttls_auto'] = false
+        gitlab_rails['smtp_ssl'] = false
+        gitlab_rails['smtp_force_ssl'] = false        
+        gitlab_rails['ldap_enabled'] = true
+        gitlab_rails['ldap_servers'] = YAML.load <<-EOS
+        main:
+          label: 'ldap.mycom.com'
+          host: 'ldap'
+          port: 389
+          uid: 'uid'
+          encryption: 'plain'
+          bind_dn: 'cn=admin,dc=mycom,dc=com'
+          password: '1'
+          active_directory: false
+          allow_username_or_email_login: true
+          lowercase_usernames: true
+          base: 'cn=admin,dc=mycom,dc=com'
+          user_filter: ''
+        EOS
+    ports:
+      - '80:80'
+      - '443:443'
+      - '22:22'
+    volumes:
+      - './gitlab/config:/etc/gitlab'
+      - './gitlab/logs:/var/log/gitlab'
+      - './gitlab/data:/var/opt/gitlab'

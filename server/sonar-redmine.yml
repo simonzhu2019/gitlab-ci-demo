@@ -1,0 +1,59 @@
+version: '3.7'
+
+services:
+  sonardb:
+    image: postgres:11.0-alpine
+    restart: always
+#    ports:
+#      - "5432:5432"
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_DB=sonar
+    volumes:
+      - ./sonardb/data:/var/lib/postgresql/data
+
+  sonarqube:
+    image: sonarqube:lts-alpine
+    restart: always
+    depends_on:
+      - sonardb
+    ports:
+      - "9000:9000"
+    environment:
+      - SONARQUBE_JDBC_USERNAME=sonar
+      - SONARQUBE_JDBC_PASSWORD=sonar
+      - SONARQUBE_JDBC_URL=jdbc:postgresql://sonardb:5432/sonar
+    volumes:
+      - ./sonarqube/conf:/opt/sonarqube/conf
+      - ./sonarqube/data:/opt/sonarqube/data
+      - ./sonarqube/extensions:/opt/sonarqube/extensions
+      - ./sonarqube/bundled-plugins:/opt/sonarqube/lib/bundled-plugins
+
+  redminedb:
+    image: postgres:11.0-alpine
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=redmine
+      - POSTGRES_PASSWORD=redmine
+      - POSTGRES_DB=redmine
+    volumes:
+      - ./redminedb/data:/var/lib/postgresql/data
+
+  redmine:
+    image: redmine:3.4.6-passenger
+    restart: always
+    depends_on:
+      - redminedb
+    ports:
+      - 8080:3000
+    environment:
+      REDMINE_DB_USERNAME: redmine
+      REDMINE_DB_POSTGRES: redminedb
+      REDMINE_DB_PASSWORD: redmine
+      REDMINE_DB_DATABASE: redmine
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./redmine/files:/usr/src/redmine/files

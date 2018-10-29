@@ -1,0 +1,37 @@
+version: '3.7'
+
+services:
+  ldap:
+    image: "osixia/openldap:1.2.2"
+    restart: always
+    environment:
+      LDAP_ORGANISATION: mycom
+      LDAP_DOMAIN: mycom.com
+      LDAP_BASE_DN: mycom.com
+      LDAP_ADMIN_PASSWORD: "admin"
+      LDAP_OPENLDAP_UID: 0
+      LDAP_OPENLDAP_GID: 0
+      LDAP_TLS: "false"
+      LDAP_CONFIG_PASSWORD: "admin"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./ldap/database:/var/lib/ldap
+      - ./ldap/conf:/etc/ldap/slapd.d
+    expose:
+      - "389"
+#    network_mode: "host"
+#    ports:
+#      - 389:389
+
+  phpldapadmin:
+    image: "osixia/phpldapadmin:0.7.2"
+    restart: always
+    environment:
+      PHPLDAPADMIN_HTTPS: "false"
+      PHPLDAPADMIN_LDAP_HOSTS: "ldap"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+#    network_mode: "host"
+    ports:
+#      - 6443:443
+      - 6080:80

@@ -1,0 +1,13 @@
+version: '3.7'
+services:
+  runner:
+    image: gitlab/gitlab-runner:alpine-v11.4.2
+    restart: always
+    extra_hosts:
+      - "server.local:192.168.193.200"
+#      - "gitlab.mycom.com:192.168.193.200"
+    environment:
+      - RUNNER_NAME=Docker Executor (Docker in Docker)
+    volumes:
+      - /srv/gitlab-runner/config:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
